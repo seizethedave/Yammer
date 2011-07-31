@@ -1,10 +1,13 @@
 import re
 import random
 from collections import deque
+import sys
+from time import sleep
 
 import mechanize
 import summarize
 from BeautifulSoup import *
+import twitter
 
 kMaxPara = 3
 kLinkQueueSize = 12
@@ -13,10 +16,24 @@ kSeenSummaryQueueSize = 22
 
 kMechanizeTimeout = 10.0
 
+kSendTweets = True
+
+try:
+   from twitter_credentials import (kConsumerKey, kConsumerSecret,
+    kAccessTokenKey, kAccessTokenSecret)
+except ImportError:
+   sys.exit("You must create twitter_credentials.py " +
+    "with four constants: kConsumerKey, kConsumerSecret, " +
+    "kAccessTokenKey, kAccessTokenSecret")
+
 # These are known to provide uninteresting content.
 
 kShitDomains = frozenset(('google.com', 'adobe.com', 'amazon.com',
  'microsoft.com', 'youtube.com'))
+
+kExcessWhitespace = re.compile('\s{2,}')
+
+kPostLimit = 140
 
 def PatchSoupTag():
    """
@@ -44,7 +61,6 @@ def PatchSoupTag():
 PatchSoupTag()
 
 
-
 def FlattenSoupTags(paras):
    for p in paras:
       for atom in p:
@@ -62,6 +78,10 @@ def CleanSoup(soup):
       for item in soup.findAll(tag):
          item.extract()
 
+def GroomPost(post):
+   post = re.sub(kExcessWhitespace, ' ', post).strip()
+   return post[:kPostLimit]
+
 def GetSummary(soup):
    paragraphs = soup.findAll('p')
    random.shuffle(paragraphs)
@@ -73,6 +93,9 @@ def GetSummary(soup):
    return summary
 
 if '__main__' == __name__:
+   twitterApi = twitter.Api(kConsumerKey, kConsumerSecret,
+    kAccessTokenKey, kAccessTokenSecret)
+
    mech = mechanize.Browser()
    mech.set_handle_robots(False)
    mech.addheaders = [('User-Agent',
@@ -82,8 +105,7 @@ if '__main__' == __name__:
     "http://www.ishouldbeworking.com/creepy.htm",
     "http://secretcrypt.com/newcrypt/bizarre/linkspage.html",
     "http://www.parapsychologydegrees.com/",
-    "http://www.scaryscreaming.com/ranesreads.html",
-
+    "http://www.scaryscreaming.com/ranesreads.html"
     ], kLinkQueueSize)
 
    seenUrls = deque([], kSeenUrlQueueSize)
@@ -124,7 +146,7 @@ if '__main__' == __name__:
 
       CleanSoup(soup)
 
-      summary = GetSummary(soup)
+      summary = GroomPost(GetSummary(soup))
 
       if not summary or summary in seenSummaries:
          continue
@@ -132,6 +154,13 @@ if '__main__' == __name__:
       seenSummaries.appendleft(summary)
 
       print summary
+
+      if kSendTweets:
+         twitterApi.PostUpdate(summary)
+         # Between 2 minutes and 2 hours.
+         sleepSeconds = random.randrange(2 * 60, 120 * 60)
+         print "Sleeping for %d seconds." % sleepSeconds
+         sleep(sleepSeconds)
 
       try:
          links = filter(DecentLookingLink, mech.links())
