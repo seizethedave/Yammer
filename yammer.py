@@ -153,25 +153,30 @@ if '__main__' == __name__:
 
       seenSummaries.appendleft(summary)
 
+      try:
+         links = filter(DecentLookingLink, mech.links())
+
+         random.shuffle(links)
+
+         for link in links[:2]:
+            linkQueue.appendleft(link.absolute_url)
+
+         print "Link queue size: %d" % len(linkQueue)
+      except:
+         pass
+
       print summary
 
       if kSendTweets:
-         twitterApi.PostUpdate(summary)
+         try:
+            twitterApi.PostUpdate(summary)
+         except twitter.TwitterError, ex:
+            if "duplicate" in ex.message:
+               continue
+
          # Between 2 minutes and 2 hours.
          sleepSeconds = random.randrange(2 * 60, 120 * 60)
          print "Sleeping for %d seconds." % sleepSeconds
          sleep(sleepSeconds)
-
-      try:
-         links = filter(DecentLookingLink, mech.links())
-      except:
-         continue
-
-      random.shuffle(links)
-
-      for link in links[:2]:
-         linkQueue.appendleft(link.absolute_url)
-
-      print "Link queue size: %d" % len(linkQueue)
 
    print "Link queue exhausted."
