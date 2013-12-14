@@ -60,7 +60,6 @@ def PatchSoupTag():
 
 PatchSoupTag()
 
-
 def FlattenSoupTags(paras):
    for p in paras:
       for atom in p:
@@ -68,7 +67,6 @@ def FlattenSoupTags(paras):
             yield unicode(atom)
          else:
             yield atom.text
-
 
 def CleanSoup(soup):
    stuffToDelete = ("script", "style", "header", "footer", "nav",
@@ -81,6 +79,13 @@ def CleanSoup(soup):
 def GroomPost(post):
    post = re.sub(kExcessWhitespace, ' ', post).strip()
    return post[:kPostLimit]
+
+def BadSummary(summary):
+   if not summary:
+      return True
+   lowerSummary = summary.lower()
+
+   return u"copyright" in lowerSummary or u"©" in lowerSummary
 
 def GetSummary(soup):
    paragraphs = soup.findAll('p')
@@ -148,7 +153,7 @@ if '__main__' == __name__:
 
       summary = GroomPost(GetSummary(soup))
 
-      if not summary or summary in seenSummaries:
+      if BadSummary(summary) or summary in seenSummaries:
          continue
 
       seenSummaries.appendleft(summary)
