@@ -3,20 +3,12 @@ import random
 from collections import deque
 import sys
 from time import sleep
+import logging
 
 import mechanize
 import summarize
 from BeautifulSoup import *
 import twitter
-
-kMaxPara = 3
-kLinkQueueSize = 12
-kSeenUrlQueueSize = 64
-kSeenSummaryQueueSize = 22
-
-kMechanizeTimeout = 10.0
-
-kSendTweets = True
 
 try:
    from twitter_credentials import (kConsumerKey, kConsumerSecret,
@@ -26,6 +18,16 @@ except ImportError:
     "with four constants: kConsumerKey, kConsumerSecret, " +
     "kAccessTokenKey, kAccessTokenSecret")
 
+kMaxPara = 3
+kLinkQueueSize = 12
+kSeenUrlQueueSize = 64
+kSeenSummaryQueueSize = 22
+
+kMechanizeTimeout = 5.0 # seconds
+
+kSendTweets = True
+kSleepRange = (2 * 60, 120 * 60)
+
 # These are known to provide uninteresting content.
 
 kShitDomains = frozenset(('google.com', 'adobe.com', 'amazon.com',
@@ -34,6 +36,8 @@ kShitDomains = frozenset(('google.com', 'adobe.com', 'amazon.com',
 kExcessWhitespace = re.compile('\s{2,}')
 
 kPostLimit = 140
+
+logging.basicConfig(filename='yammer.log', level=logging.DEBUG)
 
 def PatchSoupTag():
    """
@@ -85,7 +89,7 @@ def BadSummary(summary):
       return True
    lowerSummary = summary.lower()
 
-   return u"copyright" in lowerSummary or u"©" in lowerSummary
+   return u"copyright" in lowerSummary or u"\xa9" in lowerSummary
 
 def GetSummary(soup):
    paragraphs = soup.findAll('p')
@@ -109,8 +113,8 @@ if '__main__' == __name__:
    linkQueue = deque([
     "http://www.ishouldbeworking.com/creepy.htm",
     "http://secretcrypt.com/newcrypt/bizarre/linkspage.html",
-    "http://www.parapsychologydegrees.com/",
-    "http://www.scaryscreaming.com/ranesreads.html"
+    "http://www.truthjuice.co.uk/?page_id=5942",
+    "http://www.creepylinks.com/sites.html"
     ], kLinkQueueSize)
 
    seenUrls = deque([], kSeenUrlQueueSize)
@@ -133,7 +137,7 @@ if '__main__' == __name__:
          continue
       seenUrls.appendleft(nextUrl)
 
-      print "Processing URL: %s" % nextUrl
+      logging.debug("Processing URL: %s", nextUrl)
 
       try:
          mech.open(nextUrl, timeout = kMechanizeTimeout)
@@ -166,11 +170,11 @@ if '__main__' == __name__:
          for link in links[:2]:
             linkQueue.appendleft(link.absolute_url)
 
-         print "Link queue size: %d" % len(linkQueue)
+         logging.debug("Link queue size: %d", len(linkQueue))
       except:
          pass
 
-      print summary
+      logging.debug('Summary: ' + summary)
 
       if kSendTweets:
          try:
@@ -178,10 +182,10 @@ if '__main__' == __name__:
          except twitter.TwitterError, ex:
             if "duplicate" in ex.message:
                continue
+            logging.exception("Twitter issue.")
 
-         # Between 2 minutes and 2 hours.
-         sleepSeconds = random.randrange(2 * 60, 120 * 60)
-         print "Sleeping for %d seconds." % sleepSeconds
+         sleepSeconds = random.randrange(*kSleepRange)
+         logging.info("Sleeping for %d seconds.", sleepSeconds)
          sleep(sleepSeconds)
 
-   print "Link queue exhausted."
+   logging.debug("Link queue exhausted.")
