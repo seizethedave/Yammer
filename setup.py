@@ -4,8 +4,8 @@ requirements = """
 BeautifulSoup==3.2.1
 mechanize==0.2.5
 numpy
-nltk==2.0.1
-python-twitter==0.8.2
+nltk==2.0.4
+python-twitter==1.1
 """.split()
 
 setup(

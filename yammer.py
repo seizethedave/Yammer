@@ -26,12 +26,13 @@ kSeenSummaryQueueSize = 22
 kMechanizeTimeout = 5.0 # seconds
 
 kSendTweets = True
-kSleepRange = (2 * 60, 120 * 60)
+
+kSleepRange = (6 * 60, 6 * 60 * 60) # 6 mins - 6 hours
 
 # These are known to provide uninteresting content.
 
 kShitDomains = frozenset(('google.com', 'adobe.com', 'amazon.com',
- 'microsoft.com', 'youtube.com'))
+ 'microsoft.com', 'youtube.com', 'twitter.com', 'paypal.com'))
 
 kExcessWhitespace = re.compile('\s{2,}')
 
@@ -172,13 +173,14 @@ if '__main__' == __name__:
 
          logging.debug("Link queue size: %d", len(linkQueue))
       except:
-         pass
+         logging.exception("Exception while processing links.")
 
       logging.debug('Summary: ' + summary)
 
       if kSendTweets:
          try:
-            twitterApi.PostUpdate(summary)
+            response = twitterApi.PostUpdate(summary)
+            logging.debug(response)
          except twitter.TwitterError, ex:
             if "duplicate" in ex.message:
                continue
