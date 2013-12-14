@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 requirements = """
 BeautifulSoup==3.2.0
 mechanize==0.2.5
-nltk==2.0.1rc1
+nltk==2.0.1
 python-twitter==0.8.2
 """.split()
 
@@ -14,4 +14,3 @@ setup(
  packages=find_packages(),
  install_requires=requirements
 )
-
