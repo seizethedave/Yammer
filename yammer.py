@@ -6,9 +6,10 @@ from time import sleep
 import logging
 
 import mechanize
-import summarize
 from BeautifulSoup import *
 import twitter
+
+import summarize
 
 try:
    from twitter_credentials import (kConsumerKey, kConsumerSecret,
@@ -30,8 +31,7 @@ kSendTweets = True
 kSleepRange = (6 * 60, 6 * 60 * 60) # 6 mins - 6 hours
 
 # These are known to provide uninteresting content.
-
-kShitDomains = frozenset(('google.com', 'adobe.com', 'amazon.com',
+kCrapDomains = frozenset(('google.com', 'adobe.com', 'amazon.com',
  'microsoft.com', 'youtube.com', 'twitter.com', 'paypal.com'))
 
 kExcessWhitespace = re.compile('\s{2,}')
@@ -111,6 +111,19 @@ if '__main__' == __name__:
    mech.addheaders = [('User-Agent',
     'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1')]
 
+   """
+   Generally,
+   Start with a few known creepy link warehouses in the link queue.
+   while there are queued links:
+      pop a link
+      crawl it
+      enqueue a random selection of links pointed to by that page
+      tweet a groomed selection of text from that page
+
+   There are a few mechanisms to reduce the amount of crap and avoid redundant
+   crawls, etc.
+   """
+
    linkQueue = deque([
     "http://www.ishouldbeworking.com/creepy.htm",
     "http://secretcrypt.com/newcrypt/bizarre/linkspage.html",
@@ -128,7 +141,7 @@ if '__main__' == __name__:
        not link.url.startswith('#')
        and absUrl.startswith('http')
        and absUrl not in seenUrls
-       and all(shitDomain not in absUrl for shitDomain in kShitDomains)
+       and all(shitDomain not in absUrl for shitDomain in kCrapDomains)
       )
 
    while len(linkQueue) > 0:
