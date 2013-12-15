@@ -1,10 +1,14 @@
-After instlalling, must fire up Python interpreter and do:
+After checking out:
+
+$ pip install -e .
+
+Then, fire up Python interpreter and do:
 
 >>> import nltk
 >>> nltk.download()
 
 In the resulting TK GUI, download "stopwords" corpora and "punkt" module.
 
-Then, you should be able to run it.
+Then, you should be able to run it:
 
 $ python yammer.py
